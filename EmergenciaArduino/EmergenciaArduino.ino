@@ -57,7 +57,7 @@ static bool record_ready = false;
 static signed short *sampleBuffer;
 static bool debug_nn = false; // Set this to true to see e.g. features generated from the raw signal
 static int print_results = -(EI_CLASSIFIER_SLICES_PER_MODEL_WINDOW);
-
+String resultado;
 /**
  * @brief      Arduino setup function
  */
@@ -67,15 +67,15 @@ void setup()
     Serial.begin(115200);
     // comment out the below line to cancel the wait for USB connection (needed for native USB)
     while (!Serial);
-    Serial.println("Edge Impulse Inferencing Demo");
+    //Serial.println("Edge Impulse Inferencing Demo");
 
     // summary of inferencing settings (from model_metadata.h)
-    ei_printf("Inferencing settings:\n");
-    ei_printf("\tInterval: %.2f ms.\n", (float)EI_CLASSIFIER_INTERVAL_MS);
-    ei_printf("\tFrame size: %d\n", EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE);
-    ei_printf("\tSample length: %d ms.\n", EI_CLASSIFIER_RAW_SAMPLE_COUNT / 16);
-    ei_printf("\tNo. of classes: %d\n", sizeof(ei_classifier_inferencing_categories) /
-                                            sizeof(ei_classifier_inferencing_categories[0]));
+    //ei_printf("Inferencing settings:\n");
+    //ei_printf("\tInterval: %.2f ms.\n", (float)EI_CLASSIFIER_INTERVAL_MS);
+    //ei_printf("\tFrame size: %d\n", EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE);
+    //ei_printf("\tSample length: %d ms.\n", EI_CLASSIFIER_RAW_SAMPLE_COUNT / 16);
+    //ei_printf("\tNo. of classes: %d\n", sizeof(ei_classifier_inferencing_categories) /
+    //                                        sizeof(ei_classifier_inferencing_categories[0]));
 
     run_classifier_init();
     if (microphone_inference_start(EI_CLASSIFIER_SLICE_SIZE) == false) {
@@ -106,16 +106,31 @@ void loop()
         return;
     }
 
+    resultado = "PRED:";
     if (++print_results >= (EI_CLASSIFIER_SLICES_PER_MODEL_WINDOW)) {
         // print the predictions
-        ei_printf("Predictions ");
-        ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
-            result.timing.dsp, result.timing.classification, result.timing.anomaly);
-        ei_printf(": \n");
+        //ei_printf("Predictions ");
+        //ei_printf("(DSP: %d ms., Classification: %d ms., Anomaly: %d ms.)",
+        //    result.timing.dsp, result.timing.classification, result.timing.anomaly);
+        //ei_printf(": \n");
+        float mayorInferencia = 0;
+        String labelMayorInferencia ="";
         for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
-            ei_printf("    %s: %.5f\n", result.classification[ix].label,
-                      result.classification[ix].value);
+            //ei_printf("    %s: %.5f\n", result.classification[ix].label,
+            //          result.classification[ix].value);
+            if (result.classification[ix].value > mayorInferencia){
+              mayorInferencia = result.classification[ix].value;
+              labelMayorInferencia = result.classification[ix].label;
+            }            
+
+            resultado = resultado + result.classification[ix].label + ":" + result.classification[ix].value + ";";            
         }
+        resultado = resultado + "MoyorLabel:" + labelMayorInferencia + ";";    
+        resultado = resultado + "MayorValor:" + mayorInferencia + ";";         
+        //if (labelMayorInferencia != "Ruido" && labelMayorInferencia != ""){
+            Serial.println(resultado);         
+        ///}
+                
 #if EI_CLASSIFIER_HAS_ANOMALY == 1
         ei_printf("    anomaly score: %.3f\n", result.anomaly);
 #endif
